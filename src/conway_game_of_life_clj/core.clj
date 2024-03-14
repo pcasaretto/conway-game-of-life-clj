@@ -7,8 +7,6 @@
   (:gen-class))
 
 (def step (atom 50))
-(def size (atom 50))
-(def fps (atom 1))
 
 (defn pulse [low high rate millis]
   (let [diff (- high low)
@@ -32,34 +30,36 @@
    (pulse 0 255 5.0 millis)
    (pulse 0 255 7.0 millis)])
 
-(defn setup []
-  (q/frame-rate @fps)
-  (q/background 255)
-  inital-state)
+(defn setup [{:keys [fps]}]
+  (fn []
+    (q/frame-rate fps)
+    (q/background 255)
+    inital-state))
 
 (def update-state life/next-state)
 
-(defn draw-state [state]
-  (let [state (zipmap state (map create-color (iterate #(+ % 200) 10000)))]
-    (q/no-stroke)
-    (q/background 255)
-    (q/no-stroke)
-    (let [w (q/width)
-            h (q/height)
-            hw (/ w 2)
-            hh (/ h 2)]
-        (doseq [[ind col] state]
-          (let [x (* @step (first ind))
-                  y (* @step (second ind))
-                  col-mod (-> (+ x y (q/millis))
-                              (* 0.01)
-                              (q/sin)
-                              (* 5))]
-              (apply q/fill (map + col (repeat 3 col-mod)))
-              (q/rect x y @step @step))))))
+(defn draw-state [{:keys [step]}]
+  (fn [state]
+    (let [state (zipmap state (map create-color (iterate #(+ % 200) 10000)))]
+      (q/no-stroke)
+      (q/background 255)
+      (q/no-stroke)
+      (let [w (q/width)
+              h (q/height)
+              hw (/ w 2)
+              hh (/ h 2)]
+          (doseq [[ind col] state]
+            (let [x (* step (first ind))
+                    y (* step (second ind))
+                    col-mod (-> (+ x y (q/millis))
+                                (* 0.01)
+                                (q/sin)
+                                (* 5))]
+                (apply q/fill (map + col (repeat 3 col-mod)))
+                (q/rect x y step step)))))))
 
 (def cli-options
-  [[nil "--size SIZE" "The size of the board"
+  [[nil "--size SIZE" "The size of the visible board in number of cells"
     :default 50
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
@@ -67,7 +67,7 @@
     :default 50
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
-   [nil "--fps STEP" "How many frames to render per second"
+   [nil "--fps FPS" "How many frames to render per second"
     :default 1
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]])
@@ -76,15 +76,11 @@
 
 (defn -main [& args]
   (let [{options :options} (parse-opts args cli-options)
-        {sizev :size stepv :step fpsv :fps} options]
-       (reset! size sizev)
-       (reset! step stepv)
-       (reset! fps fpsv)
-       (dbg stepv)
+        {:keys [size step fps]} options]
        (q/sketch
           :host "host"
-          :size [(* @step @size) (* @step @size)]
-          :setup setup
+          :size [(* step size) (* step size)]
+          :setup (setup {:fps fps})
           :update update-state
-          :draw draw-state
+          :draw (draw-state {:step step})
           :middleware [m/fun-mode])))
