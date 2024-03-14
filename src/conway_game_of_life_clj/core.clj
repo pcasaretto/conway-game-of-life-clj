@@ -2,11 +2,13 @@
   (:require [quil.core :as q :include-macros true]
             [quil.middleware :as m]
             [clojure.math.combinatorics :as combo]
+            [clojure.tools.cli :refer [parse-opts]]
             [conway-game-of-life-clj.life :as life])
   (:gen-class))
 
-(def step 20)
-(def size 50)
+(def step (atom 50))
+(def size (atom 50))
+(def fps (atom 1))
 
 (defn pulse [low high rate millis]
   (let [diff (- high low)
@@ -31,7 +33,7 @@
    (pulse 0 255 7.0 millis)])
 
 (defn setup []
-  (q/frame-rate 1)
+  (q/frame-rate @fps)
   (q/background 255)
   inital-state)
 
@@ -47,22 +49,42 @@
             hw (/ w 2)
             hh (/ h 2)]
         (doseq [[ind col] state]
-          (let [x (* step (first ind))
-                  y (* step (second ind))
+          (let [x (* @step (first ind))
+                  y (* @step (second ind))
                   col-mod (-> (+ x y (q/millis))
                               (* 0.01)
                               (q/sin)
                               (* 5))]
               (apply q/fill (map + col (repeat 3 col-mod)))
-              (q/rect x y step step))))))
+              (q/rect x y @step @step))))))
 
-(q/defsketch dry-paint
-   :host "host"
-   :size [(* step size) (* step size)]
-   :setup setup
-   :update update-state
-   :draw draw-state
-   :middleware [m/fun-mode])
+(def cli-options
+  [[nil "--size SIZE" "The size of the board"
+    :default 50
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+   [nil "--step STEP" "The step size of the frame"
+    :default 50
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+   [nil "--fps STEP" "How many frames to render per second"
+    :default 1
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]])
+
+(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
 
 (defn -main [& args]
-  (println args))
+  (let [{options :options} (parse-opts args cli-options)
+        {sizev :size stepv :step fpsv :fps} options]
+       (reset! size sizev)
+       (reset! step stepv)
+       (reset! fps fpsv)
+       (dbg stepv)
+       (q/sketch
+          :host "host"
+          :size [(* @step @size) (* @step @size)]
+          :setup setup
+          :update update-state
+          :draw draw-state
+          :middleware [m/fun-mode])))

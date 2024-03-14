@@ -4,6 +4,7 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [quil "4.3.1563"]
+                 [org.clojure/tools.cli "1.1.230"]
                  [org.clojure/math.combinatorics "0.3.0"]]
   :main ^:skip-aot conway-game-of-life-clj.core
   :target-path "target/%s"
