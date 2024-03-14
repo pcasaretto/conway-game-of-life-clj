@@ -1,39 +1,12 @@
 (ns conway-game-of-life-clj.core
   (:require [quil.core :as q :include-macros true]
             [quil.middleware :as m]
-            [clojure.math.combinatorics :as combo])
+            [clojure.math.combinatorics :as combo]
+            [conway-game-of-life-clj.life :as life])
   (:gen-class))
 
 (def step 20)
 (def size 50)
-
-(defn alive? [alive neighbor-count]
-  (or (and alive (<= 2 neighbor-count 3))
-      (and (not alive) (= 3 neighbor-count))))
-
-(defn neighbors [[x y]]
-  (->>
-    (combo/cartesian-product
-     (range (max 0 (dec x)) (min (inc size) (+ x 2)))
-     (range (max 0 (dec y)) (min (inc size) (+ y 2))))
-    (filter #(not (= % [x y])))
-    (map vec)))
-
-(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
-
-(defn neighbor-counts [state]
-  (reduce (fn [acc [x y]]
-            (reduce
-              (fn [acc [x y]] (update acc [x y] #(if (nil? %) 1 (inc %))))
-              acc
-              (neighbors [x y])))
-          {}
-          state))
-
-(defn next-state [state]
-  (let [neighbor-counts (neighbor-counts state)
-        alive-map (reduce (fn [acc [x y]] (assoc acc [x y] true)) {} state)]
-       (map first (filter (fn [[coord cell-neighbor-count]] (alive? (get alive-map coord) cell-neighbor-count)) neighbor-counts))))
 
 (defn pulse [low high rate millis]
   (let [diff (- high low)
@@ -62,7 +35,7 @@
   (q/background 255)
   inital-state)
 
-(def update-state next-state)
+(def update-state life/next-state)
 
 (defn draw-state [state]
   (let [state (zipmap state (map create-color (iterate #(+ % 200) 10000)))]
@@ -91,4 +64,5 @@
    :draw draw-state
    :middleware [m/fun-mode])
 
-(defn -main [& args])
+(defn -main [& args]
+  (println args))
