@@ -3,10 +3,12 @@
             [quil.middleware :as m]
             [clojure.math.combinatorics :as combo]
             [clojure.tools.cli :refer [parse-opts]]
-            [conway-game-of-life-clj.life :as life])
+            [conway-game-of-life-clj.life :as life]
+            [conway-game-of-life-clj.rle :as rle]
+            [clojure.java.io :as io])
   (:gen-class))
 
-(def step (atom 50))
+(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
 
 (defn pulse [low high rate millis]
   (let [diff (- high low)
@@ -16,25 +18,23 @@
         x (q/sin (* s (/ 1.0 rate)))]
     (+ mid (* x half))))
 
-(def inital-state [[3 2] [2 3] [2 4] [2 5] [2 6] [3 7]
-                   [4 8] [5 8]
-                   [5 6] [6 7] [7 8]
-                   [7 6] [7 5] [7 4] [7 3] [6 2]
-                   [5 1] [4 1]
-                   [25 25] [25 26] [25 27]])
-
-
+(def default-initial-state [[3 2] [2 3] [2 4] [2 5] [2 6] [3 7]
+                            [4 8] [5 8]
+                            [5 6] [6 7] [7 8]
+                            [7 6] [7 5] [7 4] [7 3] [6 2]
+                            [5 1] [4 1]
+                            [25 25] [25 26] [25 27]])
 
 (defn create-color [millis]
   [(pulse 0 255 3.0 millis)
    (pulse 0 255 5.0 millis)
    (pulse 0 255 7.0 millis)])
 
-(defn setup [{:keys [fps]}]
+(defn setup [{:keys [fps initial-state]}]
   (fn []
     (q/frame-rate fps)
     (q/background 255)
-    inital-state))
+    initial-state))                     ;
 
 (def update-state life/next-state)
 
@@ -70,17 +70,25 @@
    [nil "--fps FPS" "How many frames to render per second"
     :default 1
     :parse-fn #(Integer/parseInt %)
-    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]])
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+   ["-f" "--file PATH" "The path of a rle file to load into the scene"]])
 
-(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
+(defn load-rle
+  [source]
+  (rle/parse (slurp source)))
+
+(defn initial-state-from-file [file]
+  (if file
+    (load-rle file)
+    default-initial-state))
 
 (defn -main [& args]
   (let [{options :options} (parse-opts args cli-options)
-        {:keys [size step fps]} options]
+        {:keys [size step fps file]} options]
        (q/sketch
           :host "host"
           :size [(* step size) (* step size)]
-          :setup (setup {:fps fps})
+          :setup (setup {:fps fps :initial-state (initial-state-from-file file)})
           :update update-state
           :draw (draw-state {:step step})
-          :middleware [m/fun-mode])))
+          :middleware [m/fun-mode])))   ;
