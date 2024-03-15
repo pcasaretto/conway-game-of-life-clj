@@ -8,8 +8,6 @@
             [clojure.java.io :as io])
   (:gen-class))
 
-(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
-
 (defn pulse [low high rate millis]
   (let [diff (- high low)
         half (/ diff 2)

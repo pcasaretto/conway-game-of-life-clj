@@ -19,11 +19,11 @@
                                 (let [num (Integer/parseInt num)
                                       size-of-match (count full-match)]
                                   (case tag
-                                    "b" (recur (drop size-of-match chars) x (+ y num) acc)
-                                    "o" (recur (drop size-of-match chars) x (+ y num) (into acc (map #(vector x %) (range y (+ y num)))))
+                                    "b" (recur (drop size-of-match chars) (+ x num) y acc)
+                                    "o" (recur (drop size-of-match chars) (+ x num) y (into acc (map #(vector % y) (range x (+ x num)))))
                                     :else (throw (Exception. "unexpected tag")))))
-                              (= c \b) (recur rest x (inc y) acc)
-                              (= c \o) (recur rest x (inc y) (conj acc [x y]))
-                              (= c \$) (recur rest (inc x) 0 acc)
+                              (= c \b) (recur rest (inc x) y acc)
+                              (= c \o) (recur rest (inc x) y (conj acc [x y]))
+                              (= c \$) (recur rest 0 (inc y) acc)
                               :else (recur rest x y acc)))))]
        (parse-content (first (str/split content #"!" 2)))))
