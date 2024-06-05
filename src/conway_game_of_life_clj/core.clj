@@ -43,16 +43,16 @@
       (q/background 255)
       (q/no-stroke)
       (let [w (q/width)
-              h (q/height)
-              hw (/ w 2)
-              hh (/ h 2)]
+            h (q/height)
+            hw (/ w 2)
+            hh (/ h 2)]
           (doseq [[ind col] state]
             (let [x (* step (first ind))
-                    y (* step (second ind))
-                    col-mod (-> (+ x y (q/millis))
-                                (* 0.01)
-                                (q/sin)
-                                (* 5))]
+                  y (* step (second ind))
+                  col-mod (-> (+ x y (q/millis))
+                              (* 0.01)
+                              (q/sin)
+                              (* 5))]
                 (apply q/fill (map + col (repeat 3 col-mod)))
                 (q/rect x y step step)))))))
 
