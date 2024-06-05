@@ -1,7 +1,6 @@
 (ns conway-game-of-life-clj.rle
   (:require [clojure.string :as str]))
 
-(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
 
 (defn consume-until-char
   [char input]
@@ -15,13 +14,22 @@
 (defn generate-points [count x y]
   (map #(vector % y) (range x (+ x count))))
 
+(defn consume-digits
+  [input]
+  (loop [digits "" input input]
+    (let [[first & rest] input]
+      (if (Character/isDigit first)
+        (recur (str digits first) rest)
+        [digits input]))))
+
 (defn parse-repeat
   [input output x y]
-  (let [[count type & rest] input
-        count (Integer/parseInt (str count))]
-    (cond (= type \b) (parse-body rest output (+ x count) y)
-          (= type \o) (parse-body rest (concat output (generate-points count x y)) (+ x count) y)
-          :else (throw (Exception. (str "unexpected character: " type))))))
+  (let [[count input] (consume-digits input)
+        count (Integer/parseInt (str count))
+        [type & rest] input]
+       (cond (= type \b) (parse-body rest output (+ x count) y)
+             (= type \o) (parse-body rest (concat output (generate-points count x y)) (+ x count) y)
+             :else (throw (Exception. (str "unexpected character: " type))))))
 
 (defn parse-body
   ( [input output] (parse-body input output 0 0))
